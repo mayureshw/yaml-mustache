@@ -14,27 +14,7 @@ mdata yaml_to_mustache(const YAML::Node& node)
 {
     switch (node.Type()) {
 
-        case YAML::NodeType::Scalar: {
-            string val = node.Scalar();
-            // Try to auto-detect type (bool / number / string)
-            if (val == "true" || val == "True") return mdata(true);
-            if (val == "false" || val == "False") return mdata(false);
-
-            // Try number
-            try {
-                size_t idx;
-                auto i = stoll(val, &idx);
-                if (idx == val.size()) return mdata(i);
-            } catch (...) {}
-            try {
-                size_t idx;
-                auto d = stod(val, &idx);
-                if (idx == val.size()) return mdata(d);
-            } catch (...) {}
-
-            // Fallback to string
-            return mdata(val);
-        }
+        case YAML::NodeType::Scalar: return mdata(node.Scalar());
 
         case YAML::NodeType::Sequence: {
             mdata list = mdata::type::list;
