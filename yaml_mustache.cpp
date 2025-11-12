@@ -10,7 +10,7 @@ using kainjow::mustache::partial;
 using mustache = kainjow::mustache::mustache;
 using namespace std;
 
-mdata yaml_to_mustache(const YAML::Node& node)
+mdata yaml_to_mustache_data(const YAML::Node& node)
 {
     switch (node.Type()) {
 
@@ -18,7 +18,7 @@ mdata yaml_to_mustache(const YAML::Node& node)
 
         case YAML::NodeType::Sequence: {
             mdata list = mdata::type::list;
-            for (auto&& elem : node) list.push_back(yaml_to_mustache(elem));
+            for (auto&& elem : node) list.push_back(yaml_to_mustache_data(elem));
             return list;
         }
 
@@ -26,7 +26,7 @@ mdata yaml_to_mustache(const YAML::Node& node)
             mdata o = mdata::type::object;
             for (auto&& it : node) {
                 auto key = it.first.as<string>();
-                o.set(key,yaml_to_mustache(it.second));
+                o.set(key,yaml_to_mustache_data(it.second));
             }
             return o;
         }
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     }
     for(int i=1; i<argc; i++) check_exists(argv[i]);
     auto yaml = file2yaml(argv[1]);
-    auto data = yaml_to_mustache(yaml);
+    auto data = yaml_to_mustache_data(yaml);
 
     auto main_tmpl = file2tmpl(argv[2]);
     for(int i=3; i<argc; i++) set_partial(data,argv[i]);
