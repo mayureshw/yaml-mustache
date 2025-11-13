@@ -71,7 +71,7 @@ mdata yaml_to_mustache_data(const YAML::Node& node, const Settings& settings, st
 
         case YAML::NodeType::Sequence: {
             mdata list = mdata::type::list;
-            for (auto&& elem : node) list.push_back(yaml_to_mustache_data(elem,settings));
+            for (auto&& elem : node) list.push_back(yaml_to_mustache_data(elem,settings,path));
             return list;
         }
 
@@ -83,20 +83,19 @@ mdata yaml_to_mustache_data(const YAML::Node& node, const Settings& settings, st
                 mdata list = mdata::type::list;
                 for (auto&& it : node) {
                     auto key = it.first.as<string>();
-                    child_path += key;
                     mdata o = mdata::type::object;
                     o.set(string(KWD_KEY),key);
-                    o.set(string(KWD_VALUE),yaml_to_mustache_data(it.second,settings,child_path));
+                    o.set(string(KWD_VALUE),yaml_to_mustache_data(it.second,settings,child_path+key));
                     list.push_back(o);
                 }
                 return list;
             }
+            else
             {
                 mdata o = mdata::type::object;
                 for (auto&& it : node) {
                     auto key = it.first.as<string>();
-                    child_path += key;
-                    o.set(key,yaml_to_mustache_data(it.second,settings,child_path));
+                    o.set(key,yaml_to_mustache_data(it.second,settings,child_path+key));
                 }
                 return o;
             }
