@@ -30,11 +30,12 @@ class Settings
         }
         return parts;
     }
-    void handleMapAsList(YAML::Node& node, vector<string>& pattern, size_t index=0, string curpath="")
+    void expandPattern(YAML::Node& node, vector<string>& pattern, vector<string>& expanded,
+         size_t index=0, string curpath="")
     {
         if ( index == pattern.size() )
         {
-            _map_as_list.insert(curpath);
+            expanded.push_back(curpath);
             return;
         }
         if ( not node.IsMap() ) return;
@@ -42,11 +43,13 @@ class Settings
         auto& key = pattern[index];
         if ( key == "*" )
             for( auto it : node )
-                handleMapAsList(it.second, pattern, index + 1, child_path + it.first.as<string>());
+                expandPattern(it.second, pattern, expanded,
+                    index + 1, child_path + it.first.as<string>() );
         else
         {
             auto&& child = node[key];
-            if (child) handleMapAsList(child,pattern,index+1,child_path+key);
+            if (child) expandPattern(child,pattern,expanded,
+                    index + 1, child_path + key );
         }
     }
 public:
@@ -58,7 +61,10 @@ public:
             for ( auto&& n : topnode[KWD_SETTINGS][KWD_MAP_AS_LIST] )
             {
                 auto&& patternv = split_path(n.as<string>());
-                handleMapAsList(topnode,patternv);
+                vector<string> expanded;
+                expandPattern(topnode,patternv,expanded);
+                copy(expanded.begin(),expanded.end(),
+                    inserter(_map_as_list,_map_as_list.end()));
             }
     }
 };
