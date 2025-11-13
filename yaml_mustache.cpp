@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <yaml-cpp/yaml.h>
 #include <mustache.hpp>
+#include <ranges>
+#include <vector>
 
 using mdata = kainjow::mustache::data;
 using kainjow::mustache::partial;
@@ -17,15 +19,47 @@ constexpr string_view KWD_VALUE       = "value";
 
 class Settings
 {
-    set<string,std::less<>> _map_as_list;
+    set<string> _map_as_list;
+    auto split_path(string path)
+    {
+        vector<string> parts;
+        for (auto&& sub : path | std::views::split('/'))
+        {
+            string s(&*sub.begin(), std::ranges::distance(sub));
+            if (!s.empty()) parts.push_back(move(s));
+        }
+        return parts;
+    }
+    void handleMapAsList(YAML::Node& node, vector<string>& pattern, size_t index=0, string curpath="")
+    {
+        if ( index == pattern.size() )
+        {
+            _map_as_list.insert(curpath);
+            return;
+        }
+        if ( not node.IsMap() ) return;
+        string child_path = curpath + "/";
+        auto& key = pattern[index];
+        if ( key == "*" )
+            for( auto it : node )
+                handleMapAsList(it.second, pattern, index + 1, child_path + it.first.as<string>());
+        else
+        {
+            auto&& child = node[key];
+            if (child) handleMapAsList(child,pattern,index+1,child_path+key);
+        }
+    }
 public:
-    // TODO: Pending wildcard interpretation
-    bool treatAsList(string_view nodepath) const { return _map_as_list.find(nodepath) != _map_as_list.end(); }
+    bool treatAsList(string path) const
+    { return _map_as_list.find(path) != _map_as_list.end(); }
     Settings(YAML::Node& topnode)
     {
         if ( topnode[KWD_SETTINGS] && topnode[KWD_SETTINGS][KWD_MAP_AS_LIST] )
             for ( auto&& n : topnode[KWD_SETTINGS][KWD_MAP_AS_LIST] )
-                _map_as_list.insert(n.Scalar());
+            {
+                auto&& patternv = split_path(n.as<string>());
+                handleMapAsList(topnode,patternv);
+            }
     }
 };
 
