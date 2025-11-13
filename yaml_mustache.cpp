@@ -14,12 +14,14 @@ using namespace std;
 
 constexpr string_view KWD_SETTINGS    = "__settings__";
 constexpr string_view KWD_MAP_AS_LIST = "map_as_list";
+constexpr string_view KWD_DEFAULTS    = "defaults";
 constexpr string_view KWD_KEY         = "key";
 constexpr string_view KWD_VALUE       = "value";
 
 class Settings
 {
     set<string> _map_as_list;
+    YAML::Node& _topnode;
     auto split_path(string path)
     {
         vector<string> parts;
@@ -52,20 +54,35 @@ class Settings
                     index + 1, child_path + key );
         }
     }
+    void handleMapAsList(YAML::Node& mapAsList)
+    {
+        for ( auto&& n : mapAsList )
+        {
+            auto&& patternv = split_path(n.as<string>());
+            vector<string> expanded;
+            expandPattern(_topnode,patternv,expanded);
+            copy(expanded.begin(),expanded.end(),
+                inserter(_map_as_list,_map_as_list.end()));
+        }
+    }
+    void handleDefaults(YAML::Node& defaults)
+    {
+    }
+    void handleSettings(YAML::Node& settings)
+    {
+        YAML::Node node;
+        node = settings[KWD_MAP_AS_LIST];
+        if ( node ) handleMapAsList(node);
+        node = settings[KWD_DEFAULTS];
+        if ( node ) handleDefaults(node);
+    }
 public:
     bool treatAsList(string path) const
     { return _map_as_list.find(path) != _map_as_list.end(); }
-    Settings(YAML::Node& topnode)
+    Settings(YAML::Node& topnode) : _topnode(topnode)
     {
-        if ( topnode[KWD_SETTINGS] && topnode[KWD_SETTINGS][KWD_MAP_AS_LIST] )
-            for ( auto&& n : topnode[KWD_SETTINGS][KWD_MAP_AS_LIST] )
-            {
-                auto&& patternv = split_path(n.as<string>());
-                vector<string> expanded;
-                expandPattern(topnode,patternv,expanded);
-                copy(expanded.begin(),expanded.end(),
-                    inserter(_map_as_list,_map_as_list.end()));
-            }
+        auto node = _topnode[KWD_SETTINGS];
+        if ( node ) handleSettings( node );
     }
 };
 
