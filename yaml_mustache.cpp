@@ -21,6 +21,7 @@ constexpr string_view KWD_VALUE       = "value";
 class Settings
 {
     set<string> _map_as_list;
+    map<string,YAML::Node> _defaults;
     YAML::Node& _topnode;
     auto split_path(string path)
     {
@@ -74,6 +75,7 @@ class Settings
     {
         vector<string> expanded;
         expandPattern(_topnode,pattern.as<string>(),expanded);
+        for( auto&& k : expanded ) _defaults.emplace(k,defaults);
     }
     void handleDefaults(YAML::Node& defaults)
     {
@@ -90,6 +92,11 @@ class Settings
 public:
     bool treatAsList(string path) const
     { return _map_as_list.find(path) != _map_as_list.end(); }
+    YAML::Node defaults(string path)
+    {
+        auto it = _defaults.find(path);
+        return it == _defaults.end() ? YAML::Node() : it->second;
+    }
     Settings(YAML::Node& topnode) : _topnode(topnode)
     {
         auto node = _topnode[KWD_SETTINGS];
