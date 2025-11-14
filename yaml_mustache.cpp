@@ -112,7 +112,6 @@ void processDefaults(YAML::Node& node, const YAML::Node& defaults)
         auto key = it.first.as<string>();
         if ( not node[key] ) node[key] = it.second;
     }
-    cout << node << endl;
 }
 
 mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string path="/")
