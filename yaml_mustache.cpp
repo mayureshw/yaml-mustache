@@ -92,7 +92,7 @@ class Settings
 public:
     bool treatAsList(string path) const
     { return _map_as_list.find(path) != _map_as_list.end(); }
-    YAML::Node defaults(string path)
+    YAML::Node defaults(string path) const
     {
         auto it = _defaults.find(path);
         return it == _defaults.end() ? YAML::Node() : it->second;
@@ -104,7 +104,18 @@ public:
     }
 };
 
-mdata yaml_to_mustache_data(const YAML::Node& node, const Settings& settings, string path="/")
+void processDefaults(YAML::Node& node, const YAML::Node& defaults)
+{
+    if ( not defaults or not node.IsMap() or not defaults.IsMap() ) return;
+    for ( auto it : defaults )
+    {
+        auto key = it.first.as<string>();
+        if ( not node[key] ) node[key] = it.second;
+    }
+    cout << node << endl;
+}
+
+mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string path="/")
 {
     switch (node.Type()) {
 
@@ -117,6 +128,7 @@ mdata yaml_to_mustache_data(const YAML::Node& node, const Settings& settings, st
         }
 
         case YAML::NodeType::Map: {
+            processDefaults(node,settings.defaults(path));
             string child_path = path;
             if (child_path.back() != '/') child_path += '/';
             if ( settings.treatAsList(path) )
