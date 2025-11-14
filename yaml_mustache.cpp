@@ -32,7 +32,7 @@ class Settings
         }
         return parts;
     }
-    void expandPattern(YAML::Node& node, vector<string>& pattern, vector<string>& expanded,
+    void expandPatternv(YAML::Node& node, vector<string>& pattern, vector<string>& expanded,
          size_t index=0, string curpath="")
     {
         if ( index == pattern.size() )
@@ -45,28 +45,39 @@ class Settings
         auto& key = pattern[index];
         if ( key == "*" )
             for( auto it : node )
-                expandPattern(it.second, pattern, expanded,
+                expandPatternv(it.second, pattern, expanded,
                     index + 1, child_path + it.first.as<string>() );
         else
         {
             auto&& child = node[key];
-            if (child) expandPattern(child,pattern,expanded,
+            if (child) expandPatternv(child,pattern,expanded,
                     index + 1, child_path + key );
         }
+    }
+    void expandPattern(YAML::Node& node, string pattern, vector<string>& expanded)
+    {
+        auto&& patternv = split_path(pattern);
+        expandPatternv(node,patternv,expanded);
     }
     void handleMapAsList(YAML::Node& mapAsList)
     {
         for ( auto&& n : mapAsList )
         {
-            auto&& patternv = split_path(n.as<string>());
+            auto&& pattern = n.as<string>();
             vector<string> expanded;
-            expandPattern(_topnode,patternv,expanded);
+            expandPattern(_topnode,pattern,expanded);
             copy(expanded.begin(),expanded.end(),
                 inserter(_map_as_list,_map_as_list.end()));
         }
     }
+    void handleDefaultPattern(YAML::Node& pattern, YAML::Node& defaults)
+    {
+        vector<string> expanded;
+        expandPattern(_topnode,pattern.as<string>(),expanded);
+    }
     void handleDefaults(YAML::Node& defaults)
     {
+        for( auto it:defaults ) handleDefaultPattern(it.first,it.second);
     }
     void handleSettings(YAML::Node& settings)
     {
