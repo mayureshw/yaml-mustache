@@ -17,6 +17,7 @@ constexpr string_view KWD_MAP_AS_LIST = "map_as_list";
 constexpr string_view KWD_DEFAULTS    = "defaults";
 constexpr string_view KWD_KEY         = "key";
 constexpr string_view KWD_VALUE       = "value";
+constexpr string_view KWD_IS_LAST     = "is_last";
 
 class Settings
 {
@@ -133,12 +134,16 @@ mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string p
             if ( settings.treatAsList(path) )
             {
                 mdata list = mdata::type::list;
+                const size_t maxindex = node.size() - 1;
+                size_t index = 0;
                 for (auto&& it : node) {
                     auto key = it.first.as<string>();
                     mdata o = mdata::type::object;
                     o.set(string(KWD_KEY),key);
                     o.set(string(KWD_VALUE),yaml_to_mustache_data(it.second,settings,child_path+key));
+                    o.set(string(KWD_IS_LAST),index==maxindex);
                     list.push_back(o);
+                    index++;
                 }
                 return list;
             }
