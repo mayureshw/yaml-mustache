@@ -98,9 +98,9 @@ public:
         auto it = _defaults.find(path);
         return it == _defaults.end() ? YAML::Node() : it->second;
     }
-    Settings(YAML::Node& topnode) : _topnode(topnode)
+    Settings(YAML::Node& settingsnode, YAML::Node& topnode) : _topnode(topnode)
     {
-        auto node = _topnode[KWD_SETTINGS];
+        auto node = settingsnode[KWD_SETTINGS];
         if ( node ) handleSettings( node );
     }
 };
@@ -210,18 +210,19 @@ void set_partial(mdata& data,char *path)
 
 int main(int argc, char *argv[])
 {
-    if ( argc < 3 )
+    if ( argc < 4 )
     {
-        cerr << "Usage: " << argv[0] << " <yamlfile> <main-mustache-template> [sub-template]..." << endl;
+        cerr << "Usage: " << argv[0] << " <settings-yamlfile> <main-yamlfile> <main-mustache-template> [partial-template]..." << endl;
         exit(1);
     }
     for(int i=1; i<argc; i++) check_exists(argv[i]);
-    auto yaml = file2yaml(argv[1]);
-    Settings settings(yaml);
-    auto data = yaml_to_mustache_data(yaml,settings);
+    auto settings_yaml = file2yaml(argv[1]);
+    auto main_yaml = file2yaml(argv[2]);
+    Settings settings(settings_yaml,main_yaml);
+    auto data = yaml_to_mustache_data(main_yaml,settings);
 
-    auto main_tmpl = file2tmpl(argv[2]);
-    for(int i=3; i<argc; i++) set_partial(data,argv[i]);
+    auto main_tmpl = file2tmpl(argv[3]);
+    for(int i=4; i<argc; i++) set_partial(data,argv[i]);
  
     cout << main_tmpl.render(data);
 }
