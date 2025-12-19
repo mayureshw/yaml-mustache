@@ -21,7 +21,7 @@ constexpr string_view KWD_IS_LAST     = "is_last";
 
 class Settings
 {
-    set<string> _map_as_list;
+    map<string,string> _map_as_list;
     map<string,YAML::Node> _defaults;
     YAML::Node& _topnode;
     auto split_path(string path)
@@ -63,13 +63,13 @@ class Settings
     }
     void handleMapAsList(YAML::Node& mapAsList)
     {
-        for ( auto&& n : mapAsList )
+        for ( auto it : mapAsList )
         {
-            auto&& pattern = n.as<string>();
+            auto&& pattern = it.first.as<string>();
+            auto&& prefix = it.second.as<string>();
             vector<string> expanded;
             expandPattern(_topnode,pattern,expanded);
-            copy(expanded.begin(),expanded.end(),
-                inserter(_map_as_list,_map_as_list.end()));
+            for( auto exp:expanded ) _map_as_list[exp] = prefix;
         }
     }
     void handleDefaultPattern(YAML::Node& pattern, YAML::Node& defaults)
@@ -91,8 +91,13 @@ class Settings
         if ( node ) handleDefaults(node);
     }
 public:
-    bool treatAsList(string path) const
-    { return _map_as_list.find(path) != _map_as_list.end(); }
+    bool treatAsList(string path, string& prefix) const
+    {
+        auto it = _map_as_list.find(path);
+        if( it == _map_as_list.end() ) return false;
+        prefix = it->second;
+        return true;
+    }
     YAML::Node defaults(string path) const
     {
         auto it = _defaults.find(path);
@@ -131,7 +136,9 @@ mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string p
             processDefaults(node,settings.defaults(path));
             string child_path = path;
             if (child_path.back() != '/') child_path += '/';
-            if ( settings.treatAsList(path) )
+            string prefix;
+            auto treatAsList = settings.treatAsList(path,prefix);
+            if ( treatAsList )
             {
                 mdata list = mdata::type::list;
                 const size_t maxindex = node.size() - 1;
@@ -139,8 +146,10 @@ mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string p
                 for (auto&& it : node) {
                     auto key = it.first.as<string>();
                     mdata o = mdata::type::object;
-                    o.set(string(KWD_KEY),key);
-                    o.set(string(KWD_VALUE),yaml_to_mustache_data(it.second,settings,child_path+key));
+                    auto pref_key = prefix + string(KWD_KEY);
+                    auto pref_val = prefix + string(KWD_VALUE);
+                    o.set(pref_key,key);
+                    o.set(pref_val,yaml_to_mustache_data(it.second,settings,child_path+key));
                     o.set(string(KWD_IS_LAST),index==maxindex);
                     list.push_back(o);
                     index++;
