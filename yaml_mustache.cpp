@@ -18,6 +18,7 @@ constexpr string_view KWD_DEFAULTS    = "defaults";
 constexpr string_view KWD_KEY         = "key";
 constexpr string_view KWD_VALUE       = "value";
 constexpr string_view KWD_IS_LAST     = "is_last";
+constexpr string_view KWD_INDEX       = "index";
 
 class Settings
 {
@@ -148,9 +149,12 @@ mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string p
                     mdata o = mdata::type::object;
                     auto pref_key = prefix + string(KWD_KEY);
                     auto pref_val = prefix + string(KWD_VALUE);
+                    auto pref_is_last = prefix + string(KWD_IS_LAST);
+                    auto pref_index = prefix + string(KWD_INDEX);
                     o.set(pref_key,key);
                     o.set(pref_val,yaml_to_mustache_data(it.second,settings,child_path+key));
-                    o.set(string(KWD_IS_LAST),index==maxindex);
+                    o.set(pref_is_last,index==maxindex);
+                    o.set(pref_index,index);
                     list.push_back(o);
                     index++;
                 }
