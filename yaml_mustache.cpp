@@ -154,7 +154,7 @@ mdata yaml_to_mustache_data(YAML::Node& node, const Settings& settings, string p
                     o.set(pref_key,key);
                     o.set(pref_val,yaml_to_mustache_data(it.second,settings,child_path+key));
                     o.set(pref_is_last,index==maxindex);
-                    o.set(pref_index,index);
+                    o.set(pref_index,to_string(index));
                     list.push_back(o);
                     index++;
                 }
